@@ -40,19 +40,6 @@ Payload = str | bytes | None
 # Settings
 
 
-def read_env_file(path: Path) -> dict[str, str]:
-    """Parse KEY=VALUE lines (the format docker compose uses for env files)."""
-    if not path.is_file():
-        return {}
-    values = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, value = line.split("=", 1)
-            values[key.strip()] = value.strip()
-    return values
-
-
 def course_settings(environ: Mapping[str, str] = os.environ) -> BrokerSettings:
     """MQTT_* environment variables win; course.env fills in the demo account.
 
@@ -60,7 +47,7 @@ def course_settings(environ: Mapping[str, str] = os.environ) -> BrokerSettings:
     the defaults reach the broker that ``docker compose up -d broker`` publishes
     on localhost:1883.
     """
-    return BrokerSettings.from_env({**read_env_file(COURSE_ENV), **environ})
+    return BrokerSettings.from_env(environ, defaults_file=COURSE_ENV)
 
 
 # --------------------------------------------------------------------------
@@ -233,10 +220,7 @@ class Peer:
                 properties=properties,
             )
         except OSError as error:  # refused, unknown host, timeout, ...
-            raise BrokerUnreachable(
-                f"Can't reach an MQTT broker at {self.settings.host}:{self.settings.port} ({error}).\n"
-                "Start the course broker with:  docker compose up -d --wait broker"
-            ) from error
+            raise BrokerUnreachable(self.settings.unreachable(error)) from error
         self.client.loop_start()
         try:
             connack = self._connacks.get(timeout=TIMEOUT)

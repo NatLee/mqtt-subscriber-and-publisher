@@ -3,28 +3,49 @@ import pytest
 
 from lessons import __main__ as runner
 from lessons import discover
-from lessons._kit import COURSE_ENV, Packet, course_settings, parse_packet_log, read_env_file
+from lessons._kit import COURSE_ENV, Packet, course_settings, parse_packet_log
 from mqttUtils import BrokerSettings
+from mqttUtils.settings import read_env_file
+
+DEMO = read_env_file(COURSE_ENV)
 
 
 def test_settings_from_env_and_defaults():
-    assert BrokerSettings.from_env({}, default_host="example.org") == BrokerSettings("example.org", 1883)
+    assert BrokerSettings.from_env({}) == BrokerSettings("localhost", 1883)
     env = {"MQTT_HOST": "broker", "MQTT_PORT": "1884", "MQTT_USERNAME": "u", "MQTT_PASSWORD": "p"}
     assert BrokerSettings.from_env(env) == BrokerSettings("broker", 1884, "u", "p")
     # Empty values count as unset (compose passes empty strings through).
     assert BrokerSettings.from_env({"MQTT_USERNAME": ""}).username is None
 
 
+def test_defaults_file_fills_in_the_login_for_the_default_broker():
+    assert DEMO["MQTT_USERNAME"] and DEMO["MQTT_PASSWORD"]
+    settings = BrokerSettings.from_env({}, defaults_file=COURSE_ENV)
+    assert settings == BrokerSettings("localhost", 1883, DEMO["MQTT_USERNAME"], DEMO["MQTT_PASSWORD"])
+    # Environment variables still win, value by value.
+    assert BrokerSettings.from_env({"MQTT_USERNAME": "me"}, defaults_file=COURSE_ENV).username == "me"
+    other_port = BrokerSettings.from_env({"MQTT_PORT": "1884"}, defaults_file=COURSE_ENV)
+    assert other_port.username == DEMO["MQTT_USERNAME"]
+
+
+def test_defaults_file_is_ignored_for_another_broker():
+    # The demo account belongs to the course broker; never send it elsewhere.
+    settings = BrokerSettings.from_env({"MQTT_HOST": "test.mosquitto.org"}, defaults_file=COURSE_ENV)
+    assert settings == BrokerSettings("test.mosquitto.org", 1883)
+
+
+def test_course_settings_and_examples_share_the_same_defaults():
+    assert course_settings({}) == BrokerSettings.from_env({}, defaults_file=COURSE_ENV)
+
+
 def test_describe_never_shows_the_password():
     assert "secret" not in BrokerSettings("h", 1, "u", "secret").describe()
 
 
-def test_course_settings_use_course_env_unless_overridden():
-    demo = read_env_file(COURSE_ENV)
-    assert demo["MQTT_USERNAME"] and demo["MQTT_PASSWORD"]
-    assert course_settings({}).username == demo["MQTT_USERNAME"]
-    assert course_settings({}).host == "localhost"
-    assert course_settings({"MQTT_USERNAME": "me"}).username == "me"
+def test_unreachable_message_says_where_and_what_to_do():
+    message = BrokerSettings("localhost", 1884).unreachable(ConnectionRefusedError(111, "Connection refused"))
+    assert "localhost:1884" in message
+    assert "docker compose up -d --wait broker" in message
 
 
 # Real lines from paho-mqtt's on_log callback (MQTT 5 client).

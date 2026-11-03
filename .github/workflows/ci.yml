@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose:
+    name: Course in Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the Python image
+        run: docker compose build python
+
+      - name: Tests against the broker
+        run: docker compose run --rm python -m pytest -v
+
+      - name: Every lesson, exactly as the README runs them
+        run: docker compose run --rm course all
+
+      # start.sh must cope with the password file left by the previous start
+      # (mosquitto_passwd -c refuses to overwrite it).
+      - name: Broker comes back after a restart
+        run: |
+          docker compose restart broker
+          docker compose run --rm course 1
+
+      - name: Broker log
+        if: failure()
+        run: docker compose logs broker
+
+      - name: Stop
+        if: always()
+        run: docker compose down --volumes
+
+  host-python:
+    name: Python ${{ matrix.python }} on the host
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Oldest and newest Python this course is tested on.
+        python: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      - name: Start the broker
+        run: docker compose up -d --wait broker
+
+      # No MQTT_* variables: the tests must find the broker on localhost and
+      # the demo account in course.env, like a learner's machine does.
+      - name: Tests
+        run: pytest -v
+
+      - name: Broker log
+        if: failure()
+        run: docker compose logs broker
+
+      - name: Stop
+        if: always()
+        run: docker compose down --volumes

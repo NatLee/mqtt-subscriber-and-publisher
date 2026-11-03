@@ -1,29 +1,34 @@
 """
 Example for building MQTT Subscriber
 
-Connects to test.mosquitto.org unless MQTT_HOST is set; inside the course
-containers (docker compose run --rm python example_subscriber.py) it
-uses the course broker and its demo account.
+By default it talks to the course broker on localhost:1883 with the demo
+account from course.env (start it with `docker compose up -d broker`).
+Set MQTT_HOST (and MQTT_USERNAME / MQTT_PASSWORD if needed) to use another
+broker, e.g. MQTT_HOST=test.mosquitto.org for Eclipse's public test broker.
 """
+import sys
 import time
+from pathlib import Path
 
 from mqttUtils import BrokerSettings, MqttSubscriber
 
-# Eclipse's public test broker: anyone can read and write every topic.
-# You can also run your own: `docker compose up -d broker` in this repo.
-PUBLIC_TEST_BROKER = 'test.mosquitto.org'
+# Login for the course broker; ignored once MQTT_HOST points elsewhere.
+COURSE_ENV = Path(__file__).resolve().with_name('course.env')
 
 if __name__ == "__main__":
 
-    broker = BrokerSettings.from_env(default_host=PUBLIC_TEST_BROKER)
+    broker = BrokerSettings.from_env(defaults_file=COURSE_ENV)
     # Set topics we subscribe
     #   yoo
     #   yee
     TOPICS = ['yoo', 'yee']
 
-    mc = MqttSubscriber(
-        broker.host, TOPICS, broker.port, username=broker.username, password=broker.password
-    )
+    try:
+        mc = MqttSubscriber(
+            broker.host, TOPICS, broker.port, username=broker.username, password=broker.password
+        )
+    except OSError as error:
+        sys.exit(broker.unreachable(error))
 
     mc.client.loop_start()  # official way to run in background!
 

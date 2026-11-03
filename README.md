@@ -182,19 +182,37 @@ yoo ['1', 'a', 'b']
 Exit!
 ```
 
-Without Docker, the examples connect to Eclipse's public test broker
-`test.mosquitto.org` (no login, everyone can read everything), as they always
-have:
+With Python on your own machine, the examples use the same course broker on
+`localhost:1883`, logging in with the demo account from `course.env`:
 
-```bash
-pip install -r requirements.txt
-python example_subscriber.py
-python example_send.py   # in a second terminal
+```console
+$ pip install -r requirements.txt
+$ docker compose up -d --wait broker
+$ python example_subscriber.py
+$ python example_send.py   # in a second terminal
+Sent 4 messages to localhost:1883 as 'student'
 ```
 
-Set `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME` and `MQTT_PASSWORD` to use
-another broker. Some networks block outgoing port 1883; if the public broker
-times out, use the course broker instead.
+To use another broker, set `MQTT_HOST`, plus `MQTT_PORT`, `MQTT_USERNAME` and
+`MQTT_PASSWORD` if it needs them. Once `MQTT_HOST` is set, the demo account
+stays home: it is only sent to the default broker. For example, Eclipse's
+public test broker needs no login, and everyone there can read everything:
+
+```bash
+MQTT_HOST=test.mosquitto.org python example_subscriber.py
+```
+
+Before 2026-11 the examples used `test.mosquitto.org` by default. Some
+networks block outgoing port 1883, and anyone can publish to a public topic,
+so they now default to the local broker.
+
+If no broker answers, the examples say so instead of printing a traceback:
+
+```console
+$ python example_send.py
+Can't reach an MQTT broker at localhost:1883 ([Errno 111] Connection refused).
+Is the broker running? The course broker starts with:  docker compose up -d --wait broker
+```
 
 In your own code:
 
@@ -219,9 +237,9 @@ programs in other languages, send JSON instead, as lesson 7 does.
 
 ## Run it with your own Python
 
-The lessons and tests also run on Python 3.10 or newer on your machine. They
-find the broker on `localhost:1883` and read the demo account from
-`course.env`:
+The lessons and tests also run on Python 3.10 or newer on your machine. Like
+the examples, they find the broker on `localhost:1883` and read the demo
+account from `course.env`:
 
 ```bash
 pip install -r requirements-dev.txt
@@ -239,13 +257,17 @@ end-to-end tests too.
 
 ```console
 $ docker compose run --rm python -m pytest -q
-...........................................................              [100%]
-59 passed in 18.88s
+......................s..........................................        [100%]
+64 passed, 1 skipped in 23.10s
 ```
+
+The skipped test checks that the examples find the broker on `localhost` with
+no settings at all. Inside the container the broker isn't on `localhost`, so
+that test runs with your own Python instead.
 
 [CI](.github/workflows/ci.yml) runs the suite in Docker Compose, runs every
 lesson with `docker compose run --rm course all`, and runs the tests again on
-Python 3.10 and 3.14 outside Docker.
+Python 3.10 and 3.14 outside Docker, where all 65 run.
 
 ## Project layout
 

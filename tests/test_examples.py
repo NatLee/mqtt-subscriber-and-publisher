@@ -5,6 +5,7 @@ import os
 import pickle
 import queue
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -13,8 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from lessons._kit import Peer
-from mqttUtils import MqttSender, MqttSubscriber
+from lessons._kit import COURSE_ENV, Peer
+from mqttUtils import DEFAULT_PORT, MqttSender, MqttSubscriber
+from mqttUtils.settings import read_env_file
 
 REPO = Path(__file__).resolve().parent.parent
 TIMEOUT = 10
@@ -84,6 +86,62 @@ def test_send_and_background_subscriber_scripts(settings):
         assert subscriber.wait(timeout=TIMEOUT) == 0
     finally:
         subscriber.kill()
+
+
+def env_without_mqtt(**extra: str) -> dict:
+    """The environment of someone who never set any MQTT_* variable."""
+    clean = {key: value for key, value in os.environ.items() if not key.startswith("MQTT_")}
+    return {**clean, **extra}
+
+
+def free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("localhost", 0))
+        return probe.getsockname()[1]
+
+
+@pytest.mark.parametrize("script", ["example_send.py", "example_subscriber.py"])
+def test_examples_default_to_localhost_and_explain_a_missing_broker(script):
+    # Only the port is changed (to one nobody listens on); the host is the default.
+    port = free_port()
+    result = subprocess.run(
+        [sys.executable, script],
+        cwd=REPO,
+        env=env_without_mqtt(MQTT_PORT=str(port)),
+        capture_output=True,
+        text=True,
+        timeout=TIMEOUT,
+    )
+    assert result.returncode == 1
+    assert f"Can't reach an MQTT broker at localhost:{port}" in result.stderr
+    assert "docker compose up -d --wait broker" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def broker_on_localhost() -> bool:
+    try:
+        socket.create_connection(("localhost", DEFAULT_PORT), timeout=1).close()
+    except OSError:
+        return False
+    return True
+
+
+# The default broker is the one compose publishes on localhost, which is only
+# "localhost" when Python runs on the host (CI's host-python jobs), not inside
+# the course containers.
+@pytest.mark.skipif(not broker_on_localhost(), reason=f"no broker on localhost:{DEFAULT_PORT}")
+def test_examples_reach_the_course_broker_with_no_settings_at_all():
+    sender = subprocess.run(
+        [sys.executable, "example_send.py"],
+        cwd=REPO,
+        env=env_without_mqtt(),
+        capture_output=True,
+        text=True,
+        timeout=TIMEOUT,
+    )
+    assert sender.returncode == 0, sender.stderr
+    demo_user = read_env_file(COURSE_ENV)["MQTT_USERNAME"]
+    assert sender.stdout.strip() == f"Sent 4 messages to localhost:{DEFAULT_PORT} as {demo_user!r}"
 
 
 class RunsCode:

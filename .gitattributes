@@ -1,0 +1,5 @@
+# Shell scripts and broker config run inside Linux containers: keep LF endings
+# even on Windows checkouts with core.autocrlf=true.
+*.sh   text eol=lf
+*.conf text eol=lf
+*.env  text eol=lf

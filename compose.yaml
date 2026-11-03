@@ -1,0 +1,50 @@
+# The MQTT course: one Mosquitto broker plus a Python container for the lessons.
+#
+#   docker compose run --rm course              list the lessons
+#   docker compose run --rm course 3            run lesson 3 (starts the broker first)
+#   docker compose run --rm python -m pytest    run the test suite
+#   docker compose run --rm python example_subscriber.py   any other script
+#   docker compose down                         stop everything
+
+name: mqtt-course
+
+x-python: &python
+  # Only started by "docker compose run", never by a plain "docker compose up".
+  profiles: ["client"]
+  build: .
+  image: mqtt-course-python
+  env_file: course.env
+  environment:
+    MQTT_HOST: broker
+  volumes:
+    # Mounted read-only, so edits to the lessons apply without a rebuild.
+    - .:/course:ro
+  depends_on:
+    broker:
+      condition: service_healthy
+
+services:
+  broker:
+    image: eclipse-mosquitto:2.1.2-alpine
+    env_file: course.env
+    command: ["sh", "/course-broker/start.sh"]
+    volumes:
+      - ./broker:/course-broker:ro
+    ports:
+      # Lets MQTT tools and Python on your machine reach the broker too.
+      # Set MQTT_HOST_PORT if something else already uses 1883.
+      - "${MQTT_HOST_PORT:-1883}:1883"
+    healthcheck:
+      # Healthy once the demo account can log in and read a $SYS topic.
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u \"$$MQTT_USERNAME\" -P \"$$MQTT_PASSWORD\" -t '$$SYS/broker/version' -C 1 -W 3"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  course:
+    <<: *python
+    entrypoint: ["python", "-m", "lessons"]
+
+  python:
+    <<: *python
+    entrypoint: ["python"]

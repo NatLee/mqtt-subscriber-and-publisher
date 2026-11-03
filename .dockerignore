@@ -1,0 +1,4 @@
+# Only the requirements files are copied into the image.
+*
+!requirements.txt
+!requirements-dev.txt

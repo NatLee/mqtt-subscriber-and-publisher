@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  Source of cover.png (1280x640, the GitHub social preview size). Re-render with:
+  msedge --headless=new --disable-gpu --hide-scrollbars --window-size=1280,640 --screenshot=cover.png cover.html
+-->
+<html lang="en">
+<meta charset="utf-8">
+<title>mqtt-subscriber-and-publisher cover</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #16213a;
+    --line: #2b3a5c;
+    --text: #e8eefc;
+    --muted: #93a4c7;
+    --accent: #34d399;
+    --pub: #60a5fa;
+    --sub: #f59e0b;
+    --mono: "Cascadia Code", Consolas, "DejaVu Sans Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at 78% 40%, #1c2b4d 0, var(--bg) 60%);
+    color: var(--text);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    position: relative;
+  }
+  .left { position: absolute; left: 72px; top: 60px; width: 540px; }
+  .kicker { font: 600 22px var(--mono); color: var(--accent); letter-spacing: .02em; }
+  h1 { font-size: 84px; line-height: .98; margin: 14px 0 22px; font-weight: 800; letter-spacing: -.02em; }
+  h1 span { color: var(--accent); }
+  .sub { font-size: 27px; line-height: 1.35; color: var(--muted); margin: 0; }
+  .sub b { color: var(--text); font-weight: 600; }
+  .cmd {
+    margin-top: 28px; display: inline-block; padding: 12px 18px; border-radius: 12px;
+    background: #0b1222; border: 1px solid var(--line); font: 500 23px var(--mono); color: var(--text);
+  }
+  .cmd::before { content: "$ "; color: var(--accent); }
+  .chips { position: absolute; left: 72px; right: 40px; bottom: 40px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font: 500 16px var(--mono); padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  }
+  .chip i { font-style: normal; color: var(--accent); margin-right: 6px; }
+  svg { position: absolute; right: 40px; top: 48px; }
+  svg text { font-family: var(--mono); }
+</style>
+<body>
+  <div class="left">
+    <div class="kicker">mqtt-subscriber-and-publisher</div>
+    <h1>MQTT,<br><span>hands-on</span></h1>
+    <p class="sub"><b>10 runnable lessons</b> with Python, <span style="white-space:nowrap">paho-mqtt 2</span> and a real Mosquitto 2 broker in Docker Compose.</p>
+    <div class="cmd">docker compose run --rm course 3</div>
+  </div>
+
+  <svg width="610" height="460" viewBox="0 0 610 460" role="img" aria-label="Publisher, broker and subscribers, with the QoS 2 handshake">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#93a4c7"/>
+      </marker>
+    </defs>
+
+    <!-- publisher -> broker -> subscribers -->
+    <rect x="10" y="88" width="150" height="64" rx="12" fill="#13294b" stroke="#60a5fa" stroke-width="2"/>
+    <text x="85" y="117" fill="#60a5fa" font-size="19" text-anchor="middle" font-weight="700">publisher</text>
+    <text x="85" y="139" fill="#93a4c7" font-size="14" text-anchor="middle">sensor-a</text>
+
+    <rect x="232" y="64" width="156" height="112" rx="16" fill="#0e3b30" stroke="#34d399" stroke-width="2.5"/>
+    <text x="310" y="108" fill="#34d399" font-size="22" text-anchor="middle" font-weight="700">broker</text>
+    <text x="310" y="134" fill="#93a4c7" font-size="14" text-anchor="middle">Mosquitto 2</text>
+    <text x="310" y="154" fill="#93a4c7" font-size="14" text-anchor="middle">auth on</text>
+
+    <rect x="460" y="20" width="140" height="56" rx="12" fill="#3a2a0c" stroke="#f59e0b" stroke-width="2"/>
+    <text x="530" y="45" fill="#f59e0b" font-size="17" text-anchor="middle" font-weight="700">subscriber</text>
+    <text x="530" y="65" fill="#93a4c7" font-size="13" text-anchor="middle">home/+/temp</text>
+    <rect x="460" y="92" width="140" height="56" rx="12" fill="#3a2a0c" stroke="#f59e0b" stroke-width="2"/>
+    <text x="530" y="117" fill="#f59e0b" font-size="17" text-anchor="middle" font-weight="700">subscriber</text>
+    <text x="530" y="137" fill="#93a4c7" font-size="13" text-anchor="middle">home/#</text>
+    <rect x="460" y="164" width="140" height="56" rx="12" fill="#3a2a0c" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="530" y="189" fill="#f59e0b" font-size="17" text-anchor="middle" font-weight="700">worker x3</text>
+    <text x="530" y="209" fill="#93a4c7" font-size="13" text-anchor="middle">$share/group</text>
+
+    <line x1="162" y1="120" x2="228" y2="120" stroke="#93a4c7" stroke-width="2" marker-end="url(#a)"/>
+    <text x="195" y="108" fill="#e8eefc" font-size="12" text-anchor="middle">PUBLISH</text>
+    <line x1="390" y1="100" x2="456" y2="52" stroke="#93a4c7" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="390" y1="120" x2="456" y2="120" stroke="#93a4c7" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="390" y1="140" x2="456" y2="188" stroke="#93a4c7" stroke-width="2" marker-end="url(#a)"/>
+
+    <!-- QoS 2 handshake -->
+    <text x="10" y="256" fill="#e8eefc" font-size="18" font-weight="700">QoS 2: exactly once</text>
+    <line x1="60" y1="296" x2="60" y2="452" stroke="#60a5fa" stroke-width="2"/>
+    <line x1="400" y1="296" x2="400" y2="452" stroke="#34d399" stroke-width="2"/>
+    <text x="60" y="292" fill="#60a5fa" font-size="13" text-anchor="middle" dy="-4">publisher</text>
+    <text x="400" y="292" fill="#34d399" font-size="13" text-anchor="middle" dy="-4">broker</text>
+
+    <line x1="62" y1="318" x2="396" y2="318" stroke="#e8eefc" stroke-width="2" marker-end="url(#a)"/>
+    <text x="230" y="311" fill="#e8eefc" font-size="15" text-anchor="middle">PUBLISH (qos 2, id 3)</text>
+    <line x1="398" y1="356" x2="64" y2="356" stroke="#93a4c7" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a)"/>
+    <text x="230" y="349" fill="#e8eefc" font-size="15" text-anchor="middle">PUBREC (id 3)</text>
+    <line x1="62" y1="394" x2="396" y2="394" stroke="#e8eefc" stroke-width="2" marker-end="url(#a)"/>
+    <text x="230" y="387" fill="#e8eefc" font-size="15" text-anchor="middle">PUBREL (id 3)</text>
+    <line x1="398" y1="432" x2="64" y2="432" stroke="#93a4c7" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a)"/>
+    <text x="230" y="425" fill="#e8eefc" font-size="15" text-anchor="middle">PUBCOMP (id 3)</text>
+
+    <text x="430" y="330" fill="#93a4c7" font-size="14">QoS 0: PUBLISH</text>
+    <text x="430" y="356" fill="#93a4c7" font-size="14">QoS 1: + PUBACK</text>
+    <text x="430" y="382" fill="#93a4c7" font-size="14">QoS 2: 4 packets</text>
+  </svg>
+
+  <div class="chips">
+    <span class="chip"><i>01</i>auth</span>
+    <span class="chip"><i>02</i>topics &amp; wildcards</span>
+    <span class="chip"><i>03</i>QoS 0/1/2</span>
+    <span class="chip"><i>04</i>retained</span>
+    <span class="chip"><i>05</i>last will</span>
+    <span class="chip"><i>06</i>sessions</span>
+    <span class="chip"><i>07-10</i>MQTT 5</span>
+  </div>
+</body>
+</html>
